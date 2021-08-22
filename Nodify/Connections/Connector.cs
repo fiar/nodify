@@ -404,7 +404,7 @@ namespace Nodify
             FrameworkElement? elem = null;
             if (Editor != null)
             {
-                elem = PendingConnection.GetPotentialConnector(Editor, PendingConnection.GetAllowOnlyConnectorsAttached(Editor));
+                elem = PendingConnection.GetPotentialConnector(Editor, PendingConnection.GetAllowOnlyConnectorsAttached(Editor), PendingConnection.GetAllowOnlyNodesAttached(Editor));
             }
 
             object? target = elem?.DataContext;

@@ -23,6 +23,7 @@ namespace Nodify
         public static readonly DependencyProperty StrokeDashArrayProperty = Shape.StrokeDashArrayProperty.AddOwner(typeof(PendingConnection));
         public static readonly DependencyProperty StrokeProperty = Shape.StrokeProperty.AddOwner(typeof(PendingConnection));
         public static readonly DependencyProperty AllowOnlyConnectorsProperty = DependencyProperty.Register(nameof(AllowOnlyConnectors), typeof(bool), typeof(PendingConnection), new FrameworkPropertyMetadata(BoxValue.True, OnAllowOnlyConnectorsChanged));
+        public static readonly DependencyProperty AllowOnlyNodesProperty = DependencyProperty.Register(nameof(AllowOnlyNodes), typeof(bool), typeof(PendingConnection), new FrameworkPropertyMetadata(BoxValue.False, OnAllowOnlyNodesChanged));
         public static readonly DependencyProperty EnableSnappingProperty = DependencyProperty.Register(nameof(EnableSnapping), typeof(bool), typeof(PendingConnection), new FrameworkPropertyMetadata(BoxValue.False));
         public static readonly DependencyProperty DirectionProperty = BaseConnection.DirectionProperty.AddOwner(typeof(PendingConnection));
 
@@ -100,6 +101,15 @@ namespace Nodify
         }
 
         /// <summary>
+        /// If true width  <see cref="AllowOnlyConnectors"/> will connect only to <see cref="ItemContainer"/>s.
+        /// </summary>
+        public bool AllowOnlyNodes
+        {
+            get => (bool)GetValue(AllowOnlyNodesProperty);
+            set => SetValue(AllowOnlyNodesProperty, value);
+        }
+
+        /// <summary>
         /// Gets or set the connection thickness.
         /// </summary>
         public double StrokeThickness
@@ -149,6 +159,7 @@ namespace Nodify
         #region Attached Properties
 
         private static readonly DependencyProperty AllowOnlyConnectorsAttachedProperty = DependencyProperty.RegisterAttached("AllowOnlyConnectorsAttached", typeof(bool), typeof(PendingConnection), new FrameworkPropertyMetadata(BoxValue.True));
+        private static readonly DependencyProperty AllowOnlyNodesAttachedProperty = DependencyProperty.RegisterAttached("AllowOnlyNodesAttached", typeof(bool), typeof(PendingConnection), new FrameworkPropertyMetadata(BoxValue.False));
         /// <summary>
         /// Will be set for <see cref="Connector"/>s and <see cref="ItemContainer"/>s when the pending connection is over the element if <see cref="EnablePreview"/> or <see cref="EnableSnapping"/> is true.
         /// </summary>
@@ -159,6 +170,12 @@ namespace Nodify
 
         internal static void SetAllowOnlyConnectorsAttached(UIElement elem, bool value)
             => elem.SetValue(AllowOnlyConnectorsAttachedProperty, value);
+
+        internal static bool GetAllowOnlyNodesAttached(UIElement elem)
+            => (bool)elem.GetValue(AllowOnlyNodesAttachedProperty);
+
+        internal static void SetAllowOnlyNodesAttached(UIElement elem, bool value)
+            => elem.SetValue(AllowOnlyNodesAttachedProperty, value);
 
         public static bool GetIsOverElement(UIElement elem)
             => (bool)elem.GetValue(IsOverElementProperty);
@@ -173,6 +190,16 @@ namespace Nodify
             if (editor != null)
             {
                 SetAllowOnlyConnectorsAttached(editor, (bool)e.NewValue);
+            }
+        }
+
+        private static void OnAllowOnlyNodesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            NodifyEditor? editor = ((PendingConnection)d).Editor;
+
+            if (editor != null)
+            {
+                SetAllowOnlyNodesAttached(editor, (bool)e.NewValue);
             }
         }
 
@@ -247,7 +274,7 @@ namespace Nodify
                 if (Editor != null && (EnablePreview || EnableSnapping))
                 {
                     // Look for a potential connector
-                    FrameworkElement? connector = Editor.ItemsHost != null ? GetPotentialConnector(Editor.ItemsHost, AllowOnlyConnectors) : GetPotentialConnector(Editor, AllowOnlyConnectors);
+                    FrameworkElement? connector = Editor.ItemsHost != null ? GetPotentialConnector(Editor.ItemsHost, AllowOnlyConnectors, AllowOnlyNodes) : GetPotentialConnector(Editor, AllowOnlyConnectors, AllowOnlyNodes);
 
                     // Update the connector's anchor and snap to it if snapping is enabled
                     if (EnableSnapping && connector is Connector target)
@@ -316,9 +343,15 @@ namespace Nodify
         /// </summary>
         /// <param name="container">The container to scan</param>
         /// <param name="allowOnlyConnectors">Will also look for <see cref="ItemContainer"/>s if false then for <see cref="FrameworkElement"/>s</param>
+        /// <param name="allowOnlyNodes">Will only look for <see cref="ItemContainer"/>s</param>
         /// <returns>The connector if found</returns>
-        internal static FrameworkElement? GetPotentialConnector(FrameworkElement container, bool allowOnlyConnectors)
+        internal static FrameworkElement? GetPotentialConnector(FrameworkElement container, bool allowOnlyConnectors, bool allowOnlyNodes)
         {
+            if (allowOnlyConnectors && allowOnlyNodes)
+            {
+                return container.GetElementUnderMouse<ItemContainer>();
+            }
+
             FrameworkElement? connector = container.GetElementUnderMouse<Connector>();
 
             if (connector == null && !allowOnlyConnectors)
