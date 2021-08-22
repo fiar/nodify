@@ -347,7 +347,7 @@ namespace Nodify
         /// <returns>The connector if found</returns>
         internal static FrameworkElement? GetPotentialConnector(FrameworkElement container, bool allowOnlyConnectors, bool allowOnlyNodes)
         {
-            if (allowOnlyConnectors && allowOnlyNodes)
+            if (!allowOnlyConnectors && allowOnlyNodes)
             {
                 return container.GetElementUnderMouse<ItemContainer>();
             }
